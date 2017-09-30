@@ -1,2 +1,2 @@
 #!/usr/bin/env sh
-genHtmlReportFromGtest.py "out/gtest_report.html" "in/*.xml"
+genHtmlReportFromGtest.py "reports/test_detail.xml" "reports/gtest_report.html"

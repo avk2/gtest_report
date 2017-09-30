@@ -55,6 +55,7 @@ reportHeader = "<tr>" \
                "</tr>\n"
 
 tableHeader = "<tr>" \
+              "<th>#</th>" \
               "<th>Test</th>" \
               "<th>Time (sec)</th>" \
               "<th width=\"200\">Status</th>" \
@@ -97,33 +98,32 @@ def process(reportFile, outFile):
             extra_content += appendMsg
 
         # name, time, status
-        test = ["", 0.0, None]
-        test[0] = str(node.attributes["name"].value)
-        test[1] = float(node.attributes["time"].value)
-        test[2] = Empty()
-        test[2].value = str(node.attributes["status"].value)
+        test = [i, "", 0.0, None]
+        test[1] = str(node.attributes["name"].value)
+        test[2] = float(node.attributes["time"].value)
+        test[3] = Empty()
+        test[3].value = str(node.attributes["status"].value)
 
-        testReportPairId = test[0] + "_file"
+        testReportPairId = test[1] + "_file"
         testReportPairId = testReportPairId.replace(".", "_")
         detailsId = testReportPairId + "details"
 
-        if test[2].value == "notrun":
-            test[2].value = disableWarningText
-            test[2].cssClass = "notrun"
+        if test[3].value == "notrun":
+            test[3].value = disableWarningText
+            test[3].cssClass = "notrun"
         elif len(node.getElementsByTagName("failure")) == 0:
-            test[2].value = okIconText
-            test[2].cssClass = "run"
+            test[3].value = okIconText
+            test[3].cssClass = "run"
         else:
-            test[2].value = notOkIconText
-            test[2].cssClass = "failed"
+            test[3].value = notOkIconText
+            test[3].cssClass = "failed"
 
         if extra_content:
             extra_content = "<pre>" + extra_content + "</pre>"
-            test[
-                2].value += '''<input type="image" src="{img}" style="float: right;"  height="30" 
+            test[3].value += '''<input type="image" src="{img}" style="float: right;"  height="30" 
                             onclick="ShowDiv('{htmlId}')"/>'''\
                             .format(img=moreButtonSrc,htmlId=detailsId)
-            test[2].value += '''<div id="{htmlId}" style="display:none;">{extra_content}</div>'''.format(
+            test[3].value += '''<div id="{htmlId}" style="display:none;">{extra_content}</div>'''.format(
                 htmlId=detailsId, extra_content=extra_content)
 
         # append 'row'

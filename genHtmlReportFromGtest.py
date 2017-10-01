@@ -94,7 +94,9 @@ def process(reportFile, outFile):
         for j in range(suite.getElementsByTagName("testcase").length):
             node = suite.getElementsByTagName("testcase").item(j)
             extra_content = ""
-            for k, v in (node.attributes.items()):
+            for z in range(len(node.attributes.items())):
+                k = node.attributes.item(z).name
+                v = node.attributes.item(z).value
                 if k == "name" or k == "status" or k == "time" or k == "classname":
                     continue
                 appendMsg = str(k) + ": " + str(v) + "\n"

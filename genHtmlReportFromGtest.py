@@ -88,46 +88,50 @@ def process(reportFile, outFile):
         timeStamp = xmlFile.getElementsByTagName("testsuites")[0].attributes["timestamp"].value
 
     # table
-    for i in range(xmlFile.getElementsByTagName("testcase").length):
-        node = xmlFile.getElementsByTagName("testcase").item(i)
-        extra_content = ""
-        for k, v in (node.attributes.items()):
-            if k == "name" or k == "status" or k == "time" or k == "classname":
-                continue
-            appendMsg = str(k) + ": " + str(v) + "\n"
-            extra_content += appendMsg
+    x = 0
+    for i in range(xmlFile.getElementsByTagName("testsuite").length):
+        suite = xmlFile.getElementsByTagName("testsuite").item(i)
+        for j in range(suite.getElementsByTagName("testcase").length):
+            node = suite.getElementsByTagName("testcase").item(j)
+            extra_content = ""
+            for k, v in (node.attributes.items()):
+                if k == "name" or k == "status" or k == "time" or k == "classname":
+                    continue
+                appendMsg = str(k) + ": " + str(v) + "\n"
+                extra_content += appendMsg
 
-        # name, time, status
-        test = [i, "", 0.0, None]
-        test[1] = str(node.attributes["name"].value)
-        test[2] = float(node.attributes["time"].value)
-        test[3] = Empty()
-        test[3].value = str(node.attributes["status"].value)
+            # name, time, status
+            test = [str(i+1)+"."+str(j+1), "", 0.0, None]
+            test[1] = str(node.attributes["name"].value)
+            test[2] = float(node.attributes["time"].value)
+            test[3] = Empty()
+            test[3].value = str(node.attributes["status"].value)
 
-        testReportPairId = test[1] + "_file"
-        testReportPairId = testReportPairId.replace(".", "_")
-        detailsId = testReportPairId + "details"
+            testReportPairId = test[1] + "_file"
+            testReportPairId = testReportPairId.replace(".", "_")
+            detailsId = testReportPairId + "details"
 
-        if test[3].value == "notrun":
-            test[3].value = disableWarningText
-            test[3].cssClass = "notrun"
-        elif len(node.getElementsByTagName("failure")) == 0:
-            test[3].value = okIconText
-            test[3].cssClass = "run"
-        else:
-            test[3].value = notOkIconText
-            test[3].cssClass = "failed"
+            if test[3].value == "notrun":
+                test[3].value = disableWarningText
+                test[3].cssClass = "notrun"
+            elif len(node.getElementsByTagName("failure")) == 0:
+                test[3].value = okIconText
+                test[3].cssClass = "run"
+            else:
+                test[3].value = notOkIconText
+                test[3].cssClass = "failed"
 
-        if extra_content:
-            extra_content = "<pre>" + extra_content + "</pre>"
-            test[3].value += '''<input type="image" src="{img}" style="float: right;"  height="30" 
-                            onclick="ShowDiv('{htmlId}')"/>'''\
-                            .format(img=moreButtonSrc,htmlId=detailsId)
-            test[3].value += '''<div id="{htmlId}" style="display:none;">{extra_content}</div>'''.format(
-                htmlId=detailsId, extra_content=extra_content)
+            if extra_content:
+                extra_content = "<pre>" + extra_content + "</pre>"
+                test[3].value += '''<input type="image" src="{img}" style="float: right;"  height="30" 
+                                onclick="ShowDiv('{htmlId}')"/>'''\
+                                .format(img=moreButtonSrc,htmlId=detailsId)
+                test[3].value += '''<div id="{htmlId}" style="display:none;">{extra_content}</div>'''.format(
+                    htmlId=detailsId, extra_content=extra_content)
 
-        # append 'row'
-        rows[i] = test
+            # append 'row'
+            rows[x] = test
+            x += 1
 
     report += generateElements([(reportFile, len(rows), failures, totalTime, timeStamp)], True)
 

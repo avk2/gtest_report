@@ -34,7 +34,13 @@ htmlDocumentText = '''<!DOCTYPE html>
 <body>
 
 <table class="aggregate_report">
-{report}
+{report1}
+</table>
+
+<br/>
+
+<table class="aggregate_report">
+{report2}
 </table>
 
 <br/>
@@ -46,13 +52,22 @@ htmlDocumentText = '''<!DOCTYPE html>
 
 </body></html>
 '''
-reportHeader = "<tr>" \
-               "<th>Report file</th>" \
-               "<th>Total unit tests</th>" \
-               "<th>Failed unit tests</th>" \
-               "<th>Execution Time(sec)</th>" \
-               "<th>Timestamp</th>" \
-               "</tr>\n"
+reportHeader1 = "<tr>" \
+                "<th>Project</th>" \
+                "<th>Author</th>" \
+                "<th>FW version</th>" \
+                "<th>FW revision</th>" \
+                "<th>Spec. revision</th>" \
+                "<th>Test revision</th>" \
+                "</tr>\n"
+
+reportHeader2 = "<tr>" \
+                "<th>Report file</th>" \
+                "<th>Total unit tests</th>" \
+                "<th>Failed unit tests</th>" \
+                "<th>Execution Time(sec)</th>" \
+                "<th>Timestamp</th>" \
+                "</tr>\n"
 
 tableHeader = "<tr>" \
               "<th>#</th>" \
@@ -74,7 +89,8 @@ def process(reportFile, outFile):
         print "Please provide an xml report file."
         return -2
 
-    report = ""
+    report1 = ""
+    report2 = ""
 
     rows = {}
     xmlFile = parse(reportFile)
@@ -94,9 +110,10 @@ def process(reportFile, outFile):
         for j in range(suite.getElementsByTagName("testcase").length):
             node = suite.getElementsByTagName("testcase").item(j)
             extra_content = ""
-            for z in range(len(node.attributes.items())):
-                k = node.attributes.item(z).name
-                v = node.attributes.item(z).value
+            # DOM doesn't return attributes in any order.
+            # TODO: sort by having set key properties with code number
+            attributes = sorted(node.attributes.items())
+            for k, v in attributes:
                 if k == "name" or k == "status" or k == "time" or k == "classname":
                     continue
                 appendMsg = str(k) + ": " + str(v) + "\n"
@@ -135,10 +152,11 @@ def process(reportFile, outFile):
             rows[x] = test
             x += 1
 
-    report += generateElements([(reportFile, len(rows), failures, totalTime, timeStamp)], True)
+    report1 += generateElements([("X", "Y", "---", "---", 0.5, 1.0)],True)
+    report2 += generateElements([(reportFile, len(rows), failures, totalTime, timeStamp)], True)
 
-    htmlDocument = htmlDocumentText.format(rows=generateElements(rows.values(), True), tableHeader=tableHeader,
-                                           report=reportHeader + report)
+    htmlDocument = htmlDocumentText.format(report1=reportHeader1 + report1, report2=reportHeader2 + report2,
+                                           tableHeader=tableHeader, rows=generateElements(rows.values(), True))
 
     with open(outFile, "wb") as writer:
         writer.write(htmlDocument)

@@ -5,6 +5,8 @@
 
 import os.path
 import sys
+from operator import itemgetter
+from time import strptime, strftime
 
 sys.dont_write_bytecode = True
 from xml.dom.minidom import *
@@ -81,7 +83,6 @@ class Empty: pass
 
 
 def process(reportFile, outFile):
-
     print "Generate HTML report based on this report:", reportFile
     print "Output HTML report filename:", outFile
 
@@ -96,12 +97,20 @@ def process(reportFile, outFile):
     xmlFile = parse(reportFile)
 
     # table header
-    totalTime = xmlFile.getElementsByTagName("testsuites")[0].attributes["time"].value
-    failures = xmlFile.getElementsByTagName("testsuites")[0].attributes["failures"].value
+    test_stats = xmlFile.getElementsByTagName("testsuites")[0]
+
+    totalTests = test_stats.attributes["tests"].value
+    totalTime = test_stats.attributes["time"].value
+    failures = test_stats.attributes["failures"].value
 
     timeStamp = ""
     if xmlFile.getElementsByTagName("testsuites")[0].attributes.has_key("timestamp"):
         timeStamp = xmlFile.getElementsByTagName("testsuites")[0].attributes["timestamp"].value
+        timeStamp = strptime(timeStamp, '%Y-%m-%dT%H:%M:%S')
+        timeStamp = strftime("%d-%m-%Y %H:%M:%S", timeStamp)
+
+    report1 += generateElements([("X", "Y", "---", "---", 0.5, 1.0)], True)
+    report2 += generateElements([(reportFile, totalTests, failures, totalTime, timeStamp)], True)
 
     # table
     x = 0
@@ -111,16 +120,19 @@ def process(reportFile, outFile):
             node = suite.getElementsByTagName("testcase").item(j)
             extra_content = ""
             # DOM doesn't return attributes in any order.
-            # TODO: sort by having set key properties with code number
-            attributes = sorted(node.attributes.items())
+            # dirty workaround:
+            # sort by having set key properties with sortable code (p.e: z1_foo=value, z2_boo=value...)
+            attributes = sorted(node.attributes.items(), key=itemgetter(0))
             for k, v in attributes:
                 if k == "name" or k == "status" or k == "time" or k == "classname":
                     continue
+                if k[1].isdigit:
+                    k = k[3:]
                 appendMsg = str(k) + ": " + str(v) + "\n"
                 extra_content += appendMsg
 
-            # name, time, status
-            test = [str(i+1)+"."+str(j+1), "", 0.0, None]
+            # row: #, name, time, status
+            test = [str(i + 1) + "." + str(j + 1), "", 0.0, None]
             test[1] = str(node.attributes["name"].value)
             test[2] = float(node.attributes["time"].value)
             test[3] = Empty()
@@ -143,8 +155,8 @@ def process(reportFile, outFile):
             if extra_content:
                 extra_content = "<pre>" + extra_content + "</pre>"
                 test[3].value += '''<input type="image" src="{img}" style="float: right;"  height="30" 
-                                onclick="ShowDiv('{htmlId}')"/>'''\
-                                .format(img=moreButtonSrc,htmlId=detailsId)
+                                onclick="ShowDiv('{htmlId}')"/>''' \
+                                .format(img=moreButtonSrc, htmlId=detailsId)
                 test[3].value += '''<div id="{htmlId}" style="display:none;">{extra_content}</div>'''.format(
                     htmlId=detailsId, extra_content=extra_content)
 
@@ -152,11 +164,10 @@ def process(reportFile, outFile):
             rows[x] = test
             x += 1
 
-    report1 += generateElements([("X", "Y", "---", "---", 0.5, 1.0)],True)
-    report2 += generateElements([(reportFile, len(rows), failures, totalTime, timeStamp)], True)
-
-    htmlDocument = htmlDocumentText.format(report1=reportHeader1 + report1, report2=reportHeader2 + report2,
-                                           tableHeader=tableHeader, rows=generateElements(rows.values(), True))
+    table = generateElements(rows.values(), True)
+    htmlDocument = htmlDocumentText.format(report1=reportHeader1 + report1,
+                                           report2=reportHeader2 + report2,
+                                           tableHeader=tableHeader, rows=table)
 
     with open(outFile, "wb") as writer:
         writer.write(htmlDocument)

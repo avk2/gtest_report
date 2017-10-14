@@ -131,8 +131,7 @@ def process(reportFile, outFile):
 
     # tests
     x = 0
-    for i in range(xmlFile.getElementsByTagName("testsuite").length):
-        suite = xmlFile.getElementsByTagName("testsuite").item(i)
+    for suite in xmlFile.getElementsByTagName("testsuite"):
         for j in range(suite.getElementsByTagName("testcase").length):
             node = suite.getElementsByTagName("testcase").item(j)
             extra_content = ""
@@ -149,7 +148,10 @@ def process(reportFile, outFile):
                 extra_content += appendMsg
 
             # row: #, name, time, status
-            test = [str(i + 1) + "." + str(j + 1), "", 0.0, None]
+            i = ""
+            if suite.hasAttribute("num"):
+                i = suite.attributes["num"].value
+            test = [i + "." + str(j + 1), "", 0.0, None]
             test[1] = str(node.attributes["name"].value)
             test[2] = float(node.attributes["time"].value)
             test[3] = Empty()

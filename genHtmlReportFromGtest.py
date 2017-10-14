@@ -48,8 +48,8 @@ htmlDocumentText = '''<!DOCTYPE html>
 <br/>
 
 <table class="utests">
-{tableHeader}
-{rows}
+{testsHeader}
+{tests}
 </table>
 
 </body></html>
@@ -71,7 +71,7 @@ reportHeader2 = "<tr>" \
                 "<th>Timestamp</th>" \
                 "</tr>\n"
 
-tableHeader = "<tr>" \
+testsHeader = "<tr>" \
               "<th>#</th>" \
               "<th>Test</th>" \
               "<th>Time (sec)</th>" \
@@ -96,23 +96,40 @@ def process(reportFile, outFile):
     rows = {}
     xmlFile = parse(reportFile)
 
-    # table header
-    test_stats = xmlFile.getElementsByTagName("testsuites")[0]
+    # test header
+    test_details = xmlFile.getElementsByTagName("testsuites")[0]
 
-    totalTests = test_stats.attributes["tests"].value
-    totalTime = test_stats.attributes["time"].value
-    failures = test_stats.attributes["failures"].value
+    project = ""
+    author = ""
+    fw_ver = ""
+    fw_rev = ""
+    spec_rev = ""
+    test_rev = ""
+    if test_details.hasAttribute("project"):
+        project = test_details.attributes["project"].value
+    if test_details.hasAttribute("author"):
+        author = test_details.attributes["author"].value
+    if test_details.hasAttribute("fw_ver"):
+        fw_ver = test_details.attributes["fw_ver"].value
+    if test_details.hasAttribute("fw_rev"):
+        fw_rev = test_details.attributes["fw_rev"].value
+    if test_details.hasAttribute("spec_rev"):
+        spec_rev = test_details.attributes["spec_rev"].value
+    if test_details.hasAttribute("test_rev"):
+        test_rev = test_details.attributes["test_rev"].value
 
-    timeStamp = ""
-    if xmlFile.getElementsByTagName("testsuites")[0].attributes.has_key("timestamp"):
-        timeStamp = xmlFile.getElementsByTagName("testsuites")[0].attributes["timestamp"].value
-        timeStamp = strptime(timeStamp, '%Y-%m-%dT%H:%M:%S')
-        timeStamp = strftime("%d-%m-%Y %H:%M:%S", timeStamp)
+    report1 += generateElements([(project, author, fw_ver, fw_rev, spec_rev, test_rev)], True)
 
-    report1 += generateElements([("X", "Y", "---", "---", 0.5, 1.0)], True)
+    totalTests = test_details.attributes["tests"].value
+    totalTime = test_details.attributes["time"].value
+    failures = test_details.attributes["failures"].value
+    timeStamp = test_details.attributes["timestamp"].value
+    timeStamp = strptime(timeStamp, '%Y-%m-%dT%H:%M:%S')
+    timeStamp = strftime("%d-%m-%Y %H:%M:%S", timeStamp)
+
     report2 += generateElements([(reportFile, totalTests, failures, totalTime, timeStamp)], True)
 
-    # table
+    # tests
     x = 0
     for i in range(xmlFile.getElementsByTagName("testsuite").length):
         suite = xmlFile.getElementsByTagName("testsuite").item(i)
@@ -138,7 +155,7 @@ def process(reportFile, outFile):
             test[3] = Empty()
             test[3].value = str(node.attributes["status"].value)
 
-            testReportPairId = test[1] + "_file"
+            testReportPairId = test[0] + "_file"
             testReportPairId = testReportPairId.replace(".", "_")
             detailsId = testReportPairId + "details"
 
@@ -164,10 +181,10 @@ def process(reportFile, outFile):
             rows[x] = test
             x += 1
 
-    table = generateElements(rows.values(), True)
+    tests = generateElements(rows.values(), True)
     htmlDocument = htmlDocumentText.format(report1=reportHeader1 + report1,
                                            report2=reportHeader2 + report2,
-                                           tableHeader=tableHeader, rows=table)
+                                           testsHeader=testsHeader, tests=tests)
 
     with open(outFile, "wb") as writer:
         writer.write(htmlDocument)

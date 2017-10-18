@@ -4,6 +4,7 @@
 # Part of gtest_report
 
 import os.path
+import re
 import sys
 from operator import itemgetter
 from time import strptime, strftime
@@ -79,7 +80,9 @@ testsHeader = "<tr>" \
               "</tr>"
 
 
-class Empty: pass
+class Empty:
+    def __init__(self):
+        pass
 
 
 def process(reportFile, outFile):
@@ -131,24 +134,24 @@ def process(reportFile, outFile):
 
     # tests
     x = 0
-    for suite in xmlFile.getElementsByTagName("testsuite"):
+    for i in range(xmlFile.getElementsByTagName("testsuite").length):
+        suite = xmlFile.getElementsByTagName("testsuite").item(i)
         for j in range(suite.getElementsByTagName("testcase").length):
             node = suite.getElementsByTagName("testcase").item(j)
             extra_content = ""
             # DOM doesn't return attributes in any order.
             # dirty workaround:
-            # sort by having set key properties with sortable code (p.e: z1_foo=value, z2_boo=value...)
+            # sort by having set key properties with sortable code (p.e: n01_foo=value, n02_boo=value...)
             attributes = sorted(node.attributes.items(), key=itemgetter(0))
             for k, v in attributes:
                 if k == "name" or k == "status" or k == "time" or k == "classname":
                     continue
-                if k[1].isdigit:
-                    k = k[3:]
+                if re.match(r'\w\d\d_', k, flags=re.UNICODE):
+                    k = k[4:]
                 appendMsg = str(k) + ": " + str(v) + "\n"
                 extra_content += appendMsg
 
             # row: #, name, time, status
-            i = ""
             if suite.hasAttribute("num"):
                 i = suite.attributes["num"].value
             test = [i + "." + str(j + 1), "", 0.0, None]
